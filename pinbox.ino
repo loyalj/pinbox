@@ -1,6 +1,16 @@
 // Because I'm too lazy to write my own bounce code today
 #include <Bounce.h>
 
+// xyzometer library imports
+#include <Wire.h>
+#include <SFE_MMA8452Q.h>
+
+// Define the nudge direction bitmasks
+#define NUDGE_LEFT_SINGLE 16
+#define NUDGE_LEFT_DOUBLE 24
+#define NUDGE_RIGHT_SINGLE 17
+#define NUDGE_RIGHT_DOUBLE 25
+
 // This will light up when side bumpers are pressed
 // creating a basic hardware response test
 int pinLED = 13;
@@ -27,6 +37,8 @@ Bounce pushButtonStart = Bounce(pinPushButtonStart, 10);
 int lastModifiers = 0;
 int currentModifiers = 0;
 
+// Setup the ayzometer
+MMA8452Q accel;
 
 /**
  * Let's get the pinbox going! Open up the button ports! Get
@@ -39,8 +51,13 @@ void setup()
   pinMode(pinPushButtonPlunger, INPUT_PULLUP);
   pinMode(pinPushButtonStart, INPUT_PULLUP);
   
+  // Setup the orange indicator light
   pinMode(pinLED, OUTPUT);
   digitalWrite(pinLED, LOW);
+  
+  // Setup the xyzometer and turn on he tap for xy
+  accel.init();
+  accel.setupTap(0x08, 0x08, 0x80); 
 }
 
 /**
@@ -103,6 +120,26 @@ void loop()
       Keyboard.set_key2(0);
       Keyboard.send_now();
     }
+  }
+  
+  // Nudge buttons
+  byte tap = accel.readTap();
+  if(tap) {
+    // nudge left double tap
+    if(tap == NUDGE_LEFT_SINGLE) {
+      Keyboard.set_key3(KEY_A);
+      Keyboard.send_now();
+    }
+   
+    if(tap == NUDGE_RIGHT_SINGLE) {
+      Keyboard.set_key4(KEY_D);
+      Keyboard.send_now();
+    }
+  }
+  else {
+    Keyboard.set_key3(0);
+    Keyboard.set_key4(0);
+    Keyboard.send_now();      
   }
   
   // Because the modifiers are set in a single call as a bit mask
